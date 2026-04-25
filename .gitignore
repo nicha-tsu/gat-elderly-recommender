@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Data outputs (regenerate)
+results/baseline_comparison.png
+results/attention_heatmap.png
+results/top_friends_user0.png
+results/qol_pre_post.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Don't ignore — required at runtime:
+#   dataset/*.csv             (data)
+#   dataset/content_embeddings.npy  (SBERT cache)
+#   checkpoints/best_model.pt (trained model)
+#   results/user_history.json (persistent storage)

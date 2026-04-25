@@ -1,0 +1,29 @@
+{
+  "paired_ttest_treatment": {
+    "t_statistic": -27.2073,
+    "p_value": 0.0,
+    "significant": true,
+    "mean_pre": 56.45,
+    "mean_post": 65.86,
+    "mean_delta": 9.41
+  },
+  "independent_ttest": {
+    "t_statistic": 25.4934,
+    "p_value": 0.0,
+    "significant": true,
+    "treatment_delta": 9.41,
+    "control_delta": -0.05,
+    "effect_size_cohens_d": 7.2106
+  },
+  "anova_domains": {
+    "F_statistic": 0.8534,
+    "p_value": 0.468168,
+    "significant": false,
+    "domain_deltas": {
+      "กายภาพ (Physical)": 8.52,
+      "จิตใจ (Psychological)": 9.96,
+      "สังคม (Social)": 9.63,
+      "สิ่งแวดล้อม (Environment)": 9.52
+    }
+  }
+}

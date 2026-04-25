@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#2563eb">
+<title>ระบบแนะนำกิจกรรมผู้สูงวัย</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Sarabun', 'Tahoma', sans-serif;
+    font-size: 18px;
+    line-height: 1.6;
+    background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
+    min-height: 100vh;
+    color: #1e293b;
+    padding-bottom: 80px;
+  }
+  header {
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    color: white;
+    padding: 20px 16px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 { font-size: 22px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+
+  .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  .card h2 { font-size: 20px; color: #1e40af; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+  /* User selector */
+  .user-select {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  select, button, input {
+    font-family: inherit;
+    font-size: 18px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid #cbd5e1;
+    background: white;
+  }
+  select:focus, input:focus { outline: none; border-color: #2563eb; }
+
+  button {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.1s;
+    min-height: 50px;
+  }
+  button:active { transform: scale(0.96); }
+  button.secondary {
+    background: #f1f5f9;
+    color: #1e40af;
+    border: 2px solid #cbd5e1;
+  }
+  button.full-width { width: 100%; }
+
+  /* QoL display */
+  .qol-bars { display: flex; flex-direction: column; gap: 10px; }
+  .qol-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .qol-bar .label { width: 110px; font-size: 16px; color: #475569; }
+  .qol-bar .progress {
+    flex: 1;
+    height: 24px;
+    background: #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .qol-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    transition: width 0.6s;
+  }
+  .qol-bar .value { width: 50px; text-align: right; font-weight: 600; color: #047857; }
+
+  /* Recommendation cards */
+  .rec-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: #fefefe;
+    transition: all 0.2s;
+  }
+  .rec-card:active { transform: scale(0.98); }
+  .rec-card .rank {
+    display: inline-block;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: white;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    margin-right: 10px;
+  }
+  .rec-card .title { font-size: 19px; font-weight: 600; color: #1e293b; }
+  .rec-card .meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+  }
+  .badge {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+  }
+  .badge.diff-easy { background: #d1fae5; color: #047857; }
+  .badge.diff-mid  { background: #fef3c7; color: #92400e; }
+  .badge.diff-hard { background: #fee2e2; color: #991b1b; }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .actions button {
+    flex: 1;
+    font-size: 16px;
+    padding: 10px;
+    min-height: 44px;
+  }
+
+  /* Explanation panel */
+  .explanation {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 14px;
+    margin-top: 10px;
+    border-radius: 8px;
+    display: none;
+  }
+  .explanation.visible { display: block; }
+  .explanation .reason {
+    margin-bottom: 8px;
+    padding: 8px;
+    background: white;
+    border-radius: 6px;
+  }
+  .explanation .reason-type {
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+    margin-bottom: 4px;
+  }
+
+  /* Feedback modal */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+  .modal-bg.visible { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    width: 90%;
+    max-width: 400px;
+  }
+  .stars {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 20px 0;
+  }
+  .star {
+    font-size: 40px;
+    cursor: pointer;
+    color: #cbd5e1;
+    transition: transform 0.1s;
+  }
+  .star.active { color: #fbbf24; }
+  .star:active { transform: scale(0.85); }
+
+  /* Loader */
+  .loader {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* WHOQOL Question */
+  .qol-question {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-left: 4px solid #10b981;
+  }
+  .qol-question .q-domain {
+    font-size: 12px;
+    color: #059669;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .qol-question .q-text {
+    font-size: 16px;
+    color: #1e293b;
+    margin-bottom: 12px;
+  }
+  .scale {
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+  }
+  .scale-btn {
+    flex: 1;
+    padding: 10px 4px;
+    border: 2px solid #cbd5e1;
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+    transition: all 0.15s;
+  }
+  .scale-btn:active { transform: scale(0.92); }
+  .scale-btn.selected {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-color: #059669;
+  }
+
+  /* Tab Bar (bottom navigation) */
+  .tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+    display: flex;
+    z-index: 90;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 12px 4px;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: color 0.15s;
+  }
+  .tab.active { color: #2563eb; }
+  .tab .icon { font-size: 24px; display: block; }
+  .tab .lbl { font-size: 12px; margin-top: 2px; font-weight: 600; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Profile */
+  .profile-header {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+  .profile-avatar {
+    width: 80px; height: 80px;
+    background: white;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+  }
+  .profile-name { font-size: 22px; font-weight: 700; }
+  .profile-meta { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .stat-box {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  }
+  .stat-box .num {
+    font-size: 26px;
+    font-weight: 700;
+    color: #2563eb;
+  }
+  .stat-box .lbl {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  /* History list */
+  .history-item {
+    background: white;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .history-item .h-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fde68a, #f59e0b);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .history-item .h-body { flex: 1; min-width: 0; }
+  .history-item .h-title {
+    font-size: 15px; font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .history-item .h-meta {
+    font-size: 12px; color: #64748b;
+    margin-top: 2px;
+  }
+  .history-item .h-rating {
+    color: #f59e0b;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .history-item .h-qol {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .h-qol.pos { background: #d1fae5; color: #047857; }
+  .h-qol.neg { background: #fee2e2; color: #991b1b; }
+  .h-qol.zero { background: #e2e8f0; color: #475569; }
+
+  /* Trend chart */
+  .trend-chart {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+  .chart-svg { width: 100%; height: 180px; }
+
+  .empty { text-align: center; color: #64748b; padding: 30px; }
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 15px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 300;
+  }
+  .toast.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌸 ระบบแนะนำกิจกรรม</h1>
+  <div class="subtitle">เพื่อพัฒนาทักษะปัญญาผู้สูงวัย</div>
+</header>
+
+<div class="container">
+
+  <!-- User Selection (always visible at top) -->
+  <div class="card">
+    <h2>👤 เลือกผู้ใช้งาน</h2>
+    <div class="user-select">
+      <select id="userSelect" style="flex:1">
+        <option value="">-- กรุณาเลือก --</option>
+      </select>
+      <button onclick="loadUserData()">เลือก</button>
+    </div>
+  </div>
+
+  <!-- ── Page: Recommendations ──────────────────── -->
+  <div class="page active" id="page-rec">
+    <div class="card" id="qolCard" style="display:none">
+      <h2>💚 คุณภาพชีวิตปัจจุบัน</h2>
+      <div class="qol-bars" id="qolBars"></div>
+      <div style="text-align:center; margin-top:14px; font-size:22px; font-weight:700; color:#047857;" id="qolTotal"></div>
+      <button class="full-width" style="margin-top:14px; background:linear-gradient(135deg,#10b981,#059669)" onclick="openQol()">
+        📋 ประเมินคุณภาพชีวิต (WHOQOL-BREF)
+      </button>
+    </div>
+
+    <div class="card" id="recCard" style="display:none">
+      <h2>✨ กิจกรรมแนะนำสำหรับคุณ</h2>
+      <button class="full-width" onclick="getRecommendations()">🔄 ขอคำแนะนำ</button>
+      <div id="recList"></div>
+    </div>
+  </div>
+
+  <!-- ── Page: Profile ──────────────────────────── -->
+  <div class="page" id="page-profile">
+    <div id="profileContent">
+      <div class="empty">กรุณาเลือกผู้ใช้ก่อน</div>
+    </div>
+  </div>
+
+  <!-- ── Page: History ──────────────────────────── -->
+  <div class="page" id="page-history">
+    <div class="card">
+      <h2>📜 ประวัติกิจกรรม</h2>
+      <div id="historyList">
+        <div class="empty">กรุณาเลือกผู้ใช้ก่อน</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📈 แนวโน้มคุณภาพชีวิต</h2>
+      <div id="trendChart">
+        <div class="empty">ยังไม่มีข้อมูล QoL</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Tab Bar ────────────────────────────────── -->
+<div class="tabbar">
+  <div class="tab active" onclick="switchTab('rec')">
+    <span class="icon">✨</span><span class="lbl">แนะนำ</span>
+  </div>
+  <div class="tab" onclick="switchTab('profile')">
+    <span class="icon">👤</span><span class="lbl">โปรไฟล์</span>
+  </div>
+  <div class="tab" onclick="switchTab('history')">
+    <span class="icon">📜</span><span class="lbl">ประวัติ</span>
+  </div>
+</div>
+
+<!-- WHOQOL Assessment Modal -->
+<div class="modal-bg" id="qolModal">
+  <div class="modal" style="max-width:520px; max-height:85vh; overflow-y:auto">
+    <h2>📋 ประเมินคุณภาพชีวิต</h2>
+    <p style="color:#64748b; margin:10px 0 16px; font-size:15px">
+      โปรดเลือกคำตอบที่ตรงกับความรู้สึกของคุณในช่วง 2 สัปดาห์ที่ผ่านมา
+    </p>
+    <div id="qolQuestions"></div>
+    <div style="display:flex; gap:8px; margin-top:20px">
+      <button class="secondary" style="flex:1" onclick="closeQol()">ยกเลิก</button>
+      <button style="flex:2" onclick="submitQol()">บันทึกการประเมิน</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal-bg" id="feedbackModal">
+  <div class="modal">
+    <h2 id="feedbackTitle">ให้คะแนนกิจกรรม</h2>
+    <p style="color:#64748b; margin:12px 0">รู้สึกอย่างไรหลังเข้าร่วมกิจกรรมนี้?</p>
+    <div class="stars" id="starRating"></div>
+    <div style="display:flex; gap:8px; margin-top:16px">
+      <button class="secondary" style="flex:1" onclick="closeFeedback()">ยกเลิก</button>
+      <button style="flex:1" onclick="submitFeedback()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin.includes('8000') ? '' : 'http://localhost:8000';
+let currentUserId = null;
+let currentItemId = null;
+let currentRating = 0;
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), 2200);
+}
+
+async function loadUsers() {
+  try {
+    const r = await fetch(`${API}/api/users?limit=50`);
+    const users = await r.json();
+    const sel = document.getElementById('userSelect');
+    users.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.user_id;
+      opt.textContent = `ผู้ใช้ #${u.user_id} (อายุ ${u.age} ปี, ${u.gender})`;
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    toast('⚠ ไม่สามารถเชื่อมต่อ API');
+  }
+}
+
+async function loadUserData() {
+  const uid = document.getElementById('userSelect').value;
+  if (!uid) { toast('กรุณาเลือกผู้ใช้'); return; }
+  currentUserId = parseInt(uid);
+
+  document.getElementById('qolCard').style.display = 'block';
+  document.getElementById('recCard').style.display = 'block';
+
+  await loadQoL();
+  await getRecommendations();
+}
+
+async function loadQoL() {
+  const r = await fetch(`${API}/api/qol/${currentUserId}`);
+  const data = await r.json();
+  const bars = document.getElementById('qolBars');
+  bars.innerHTML = '';
+
+  const labels = {
+    physical: 'กายภาพ',
+    psychological: 'จิตใจ',
+    social: 'สังคม',
+    environment: 'สิ่งแวดล้อม',
+  };
+
+  for (const key of Object.keys(labels)) {
+    const score = data.baseline[key] + data.current_delta[key];
+    const pct = Math.min(100, Math.max(0, score));
+    bars.innerHTML += `
+      <div class="qol-bar">
+        <div class="label">${labels[key]}</div>
+        <div class="progress"><div class="fill" style="width:${pct}%"></div></div>
+        <div class="value">${score.toFixed(1)}</div>
+      </div>`;
+  }
+  document.getElementById('qolTotal').textContent =
+    `📊 รวม: ${data.current_total.toFixed(1)} / 100`;
+}
+
+async function getRecommendations() {
+  const list = document.getElementById('recList');
+  list.innerHTML = '<div class="loader"><div class="spinner"></div>กำลังคำนวณคำแนะนำ...</div>';
+
+  try {
+    const r = await fetch(`${API}/api/recommend`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({user_id: currentUserId, top_k: 5}),
+    });
+    const data = await r.json();
+    list.innerHTML = '';
+    data.recommendations.forEach((item, i) => {
+      const diffClass = item.difficulty === 'ง่าย' ? 'diff-easy'
+                      : item.difficulty === 'ปานกลาง' ? 'diff-mid' : 'diff-hard';
+      list.innerHTML += `
+        <div class="rec-card">
+          <div>
+            <span class="rank">${i+1}</span>
+            <span class="title">${item.title}</span>
+          </div>
+          <div class="meta">
+            <span class="badge">📂 ${item.category}</span>
+            <span class="badge">⏱ ${item.duration_min} นาที</span>
+            <span class="badge ${diffClass}">📈 ${item.difficulty}</span>
+            <span class="badge">🧠 ${(item.cognitive_benefit*100).toFixed(0)}%</span>
+          </div>
+          <div class="actions">
+            <button class="secondary" onclick="explain(${item.item_id}, this)">❓ ทำไมแนะนำ?</button>
+            <button onclick="openFeedback(${item.item_id}, '${item.title.replace(/'/g, '')}')">✓ เข้าร่วม</button>
+          </div>
+          <div class="explanation" id="exp-${item.item_id}"></div>
+        </div>`;
+    });
+  } catch (e) {
+    list.innerHTML = '<div class="empty">⚠ ไม่สามารถโหลดคำแนะนำได้</div>';
+  }
+}
+
+async function explain(itemId, btn) {
+  const exp = document.getElementById(`exp-${itemId}`);
+  if (exp.classList.contains('visible')) {
+    exp.classList.remove('visible');
+    return;
+  }
+  exp.innerHTML = '<div class="loader"><div class="spinner"></div>กำลังวิเคราะห์...</div>';
+  exp.classList.add('visible');
+
+  const r = await fetch(`${API}/api/explain/${currentUserId}/${itemId}`);
+  const data = await r.json();
+  if (data.reasons.length === 0) {
+    exp.innerHTML = '<em>ยังไม่มีข้อมูลเพียงพอสำหรับการอธิบาย</em>';
+    return;
+  }
+  exp.innerHTML = '<strong>🔍 เหตุผลที่ระบบแนะนำ:</strong>';
+  data.reasons.forEach(r => {
+    const typeLabel = r.type === 'social_influence' ? '👥 อิทธิพลจากเพื่อน' : '🎯 ตรงกับความสนใจ';
+    exp.innerHTML += `
+      <div class="reason">
+        <div class="reason-type">${typeLabel} (น้ำหนัก: ${r.attention_weight.toFixed(3)})</div>
+        <div>${r.message}</div>
+      </div>`;
+  });
+}
+
+function openFeedback(itemId, title) {
+  currentItemId = itemId;
+  currentRating = 0;
+  document.getElementById('feedbackTitle').textContent = `${title}`;
+  const stars = document.getElementById('starRating');
+  stars.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'star';
+    s.textContent = '★';
+    s.onclick = () => {
+      currentRating = i;
+      [...stars.children].forEach((el, idx) => {
+        el.classList.toggle('active', idx < i);
+      });
+    };
+    stars.appendChild(s);
+  }
+  document.getElementById('feedbackModal').classList.add('visible');
+}
+
+function closeFeedback() {
+  document.getElementById('feedbackModal').classList.remove('visible');
+}
+
+async function submitFeedback() {
+  if (currentRating === 0) { toast('กรุณาให้คะแนน'); return; }
+  const r = await fetch(`${API}/api/feedback`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      user_id: currentUserId,
+      item_id: currentItemId,
+      rating: currentRating,
+      qol_change: 0,
+    }),
+  });
+  const data = await r.json();
+  closeFeedback();
+  toast(data.message || '✓ บันทึกเรียบร้อย');
+  await loadQoL();
+  await getRecommendations();   // ระบบจะปรับคำแนะนำใหม่จาก QoL
+}
+
+// ── Tab Navigation ─────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  event.currentTarget.classList.add('active');
+
+  if (currentUserId === null) return;
+  if (name === 'profile') loadProfile();
+  if (name === 'history') { loadHistory(); loadTrend(); }
+}
+
+// ── Profile Page ────────────────────────────────────────────────────────────
+async function loadProfile() {
+  const container = document.getElementById('profileContent');
+  container.innerHTML = '<div class="loader"><div class="spinner"></div>กำลังโหลด...</div>';
+
+  try {
+    const r = await fetch(`${API}/api/profile/${currentUserId}`);
+    const p = await r.json();
+    const skillEmoji = {'ต่ำ':'🌱','ปานกลาง':'🌿','สูง':'🌳'}[p.tech_skill] || '👤';
+    const healthEmoji = {'ดี':'💪','ปานกลาง':'😊','ต้องดูแล':'🤲'}[p.health_status] || '❤️';
+
+    container.innerHTML = `
+      <div class="profile-header">
+        <div class="profile-avatar">${p.gender === 'หญิง' ? '👵' : '👴'}</div>
+        <div class="profile-name">ผู้ใช้ #${p.user_id}</div>
+        <div class="profile-meta">${p.gender} • อายุ ${p.age} ปี</div>
+      </div>
+
+      <div class="card">
+        <h2>📊 สถิติการใช้งาน</h2>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="num">${p.stats.total_activities}</div>
+            <div class="lbl">กิจกรรมที่เข้าร่วม</div>
+          </div>
+          <div class="stat-box">
+            <div class="num">${p.stats.avg_rating || '-'}</div>
+            <div class="lbl">⭐ คะแนนเฉลี่ย</div>
+          </div>
+          <div class="stat-box">
+            <div class="num" style="color:${p.stats.total_qol_gain >= 0 ? '#047857' : '#991b1b'}">
+              ${p.stats.total_qol_gain >= 0 ? '+' : ''}${p.stats.total_qol_gain}
+            </div>
+            <div class="lbl">รวม Δ QoL</div>
+          </div>
+          <div class="stat-box">
+            <div class="num">${p.stats.qol_assessments}</div>
+            <div class="lbl">ครั้งประเมิน</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🏷️ ข้อมูลส่วนตัว</h2>
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:16px">
+          <div>${skillEmoji} ทักษะเทคโนโลยี: <strong>${p.tech_skill}</strong></div>
+          <div>${healthEmoji} สถานะสุขภาพ: <strong>${p.health_status}</strong></div>
+          <div>🎯 ประเภทกิจกรรมที่ชอบ: <strong>${p.stats.favorite_category}</strong></div>
+          <div>🌈 หมวดที่ลอง: <strong>${p.stats.categories_explored} ประเภท</strong></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>💚 QoL พื้นฐาน (Baseline)</h2>
+        <div class="qol-bars">
+          ${['physical','psychological','social','environment'].map(k => {
+            const labels = {physical:'กายภาพ', psychological:'จิตใจ', social:'สังคม', environment:'สิ่งแวดล้อม'};
+            const v = p.baseline_qol[k];
+            return `<div class="qol-bar">
+              <div class="label">${labels[k]}</div>
+              <div class="progress"><div class="fill" style="width:${v}%"></div></div>
+              <div class="value">${v.toFixed(1)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  } catch (e) {
+    container.innerHTML = '<div class="empty">⚠ ไม่สามารถโหลดโปรไฟล์ได้</div>';
+  }
+}
+
+// ── History Page ────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = '<div class="loader"><div class="spinner"></div>กำลังโหลด...</div>';
+
+  try {
+    const r = await fetch(`${API}/api/history/${currentUserId}`);
+    const data = await r.json();
+    if (!data.items.length) {
+      list.innerHTML = '<div class="empty">ยังไม่มีประวัติกิจกรรม<br><small>เริ่มเข้าร่วมกิจกรรมในแท็บ "แนะนำ"</small></div>';
+      return;
+    }
+    list.innerHTML = data.items.map(h => {
+      const dt = new Date(h.timestamp);
+      const dateStr = dt.toLocaleDateString('th-TH', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+      const stars = '★'.repeat(h.rating) + '☆'.repeat(5 - h.rating);
+      const qolClass = h.qol_change > 0 ? 'pos' : (h.qol_change < 0 ? 'neg' : 'zero');
+      const qolSign = h.qol_change > 0 ? '+' : '';
+      return `
+        <div class="history-item">
+          <div class="h-icon">🎯</div>
+          <div class="h-body">
+            <div class="h-title">${h.title}</div>
+            <div class="h-meta">${h.category} • ${dateStr}</div>
+            <div style="display:flex; gap:8px; margin-top:4px; align-items:center">
+              <span class="h-rating">${stars}</span>
+              <span class="h-qol ${qolClass}">QoL ${qolSign}${h.qol_change}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="empty">⚠ ไม่สามารถโหลดประวัติได้</div>';
+  }
+}
+
+// ── Trend Chart (SVG) ───────────────────────────────────────────────────────
+async function loadTrend() {
+  const container = document.getElementById('trendChart');
+  container.innerHTML = '<div class="loader"><div class="spinner"></div>กำลังโหลด...</div>';
+
+  try {
+    const r = await fetch(`${API}/api/qol/trend/${currentUserId}`);
+    const data = await r.json();
+    if (data.trend.length < 2) {
+      container.innerHTML = '<div class="empty">ต้องประเมินอย่างน้อย 2 ครั้งเพื่อดูแนวโน้ม</div>';
+      return;
+    }
+    container.innerHTML = drawTrendChart(data.trend);
+  } catch (e) {
+    container.innerHTML = '<div class="empty">⚠ ไม่สามารถโหลดข้อมูลได้</div>';
+  }
+}
+
+function drawTrendChart(trend) {
+  const W = 320, H = 180, P = 30;
+  const values = trend.map(t => t.total);
+  const max = Math.max(100, ...values);
+  const min = Math.min(0, ...values);
+  const range = max - min || 1;
+
+  const points = values.map((v, i) => {
+    const x = P + (i / (values.length - 1)) * (W - P * 2);
+    const y = H - P - ((v - min) / range) * (H - P * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
+  const path = points.join(' L ');
+  const dots = values.map((v, i) => {
+    const [x, y] = points[i].split(',');
+    return `<circle cx="${x}" cy="${y}" r="4" fill="#2563eb"/>
+            <text x="${x}" y="${parseFloat(y) - 8}" text-anchor="middle" font-size="11" fill="#1e293b" font-weight="600">${v.toFixed(0)}</text>`;
+  }).join('');
+
+  const labels = trend.map((t, i) => {
+    const x = P + (i / (trend.length - 1)) * (W - P * 2);
+    const dt = new Date(t.timestamp);
+    return `<text x="${x}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#64748b">${dt.getDate()}/${dt.getMonth()+1}</text>`;
+  }).join('');
+
+  const latest = values[values.length - 1];
+  const first = values[0];
+  const change = (latest - first).toFixed(1);
+  const changeColor = change >= 0 ? '#047857' : '#991b1b';
+
+  return `
+    <div style="text-align:center; margin-bottom:8px">
+      <span style="font-size:14px; color:#64748b">เปลี่ยนแปลง: </span>
+      <span style="font-size:18px; font-weight:700; color:${changeColor}">${change >= 0 ? '+' : ''}${change}</span>
+    </div>
+    <svg class="chart-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <line x1="${P}" y1="${P}" x2="${P}" y2="${H-P}" stroke="#e2e8f0"/>
+      <line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="#e2e8f0"/>
+      <path d="M ${path}" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+      ${dots}${labels}
+    </svg>`;
+}
+
+// ── WHOQOL-BREF Assessment ──────────────────────────────────────────────────
+const QOL_QUESTIONS = [
+  { key: "physical_1", domain: "กายภาพ", text: "สุขภาพร่างกายโดยรวมของคุณเป็นอย่างไร?",
+    labels: ["แย่มาก", "แย่", "ปานกลาง", "ดี", "ดีมาก"] },
+  { key: "physical_2", domain: "กายภาพ", text: "คุณมีแรงและพลังในการทำกิจวัตรประจำวันมากน้อยเพียงใด?",
+    labels: ["ไม่มีเลย", "น้อย", "ปานกลาง", "มาก", "มากที่สุด"] },
+  { key: "psychological_1", domain: "จิตใจ", text: "คุณพึงพอใจในชีวิตของคุณมากน้อยเพียงใด?",
+    labels: ["ไม่พอใจมาก", "ไม่พอใจ", "เฉย ๆ", "พอใจ", "พอใจมาก"] },
+  { key: "psychological_2", domain: "จิตใจ", text: "คุณรู้สึกมีความสุขและอารมณ์ดีบ่อยแค่ไหน?",
+    labels: ["ไม่เคย", "นาน ๆ ครั้ง", "บ่อย", "บ่อยมาก", "เกือบตลอดเวลา"] },
+  { key: "social_1", domain: "สังคม", text: "ความสัมพันธ์ส่วนตัวของคุณกับคนรอบข้างเป็นอย่างไร?",
+    labels: ["แย่มาก", "แย่", "พอใช้", "ดี", "ดีมาก"] },
+  { key: "social_2", domain: "สังคม", text: "คุณได้รับการสนับสนุนจากเพื่อนและครอบครัวเพียงพอไหม?",
+    labels: ["ไม่เลย", "น้อย", "ปานกลาง", "มาก", "มากที่สุด"] },
+  { key: "environment_1", domain: "สิ่งแวดล้อม", text: "คุณรู้สึกปลอดภัยในชีวิตประจำวันแค่ไหน?",
+    labels: ["ไม่เลย", "น้อย", "ปานกลาง", "มาก", "มากที่สุด"] },
+  { key: "environment_2", domain: "สิ่งแวดล้อม", text: "คุณเข้าถึงข้อมูลและกิจกรรมที่ต้องการได้มากน้อยเพียงใด?",
+    labels: ["ไม่ได้เลย", "น้อย", "ปานกลาง", "มาก", "มากที่สุด"] },
+];
+
+let qolAnswers = {};
+
+function openQol() {
+  if (currentUserId === null) { toast('กรุณาเลือกผู้ใช้ก่อน'); return; }
+  qolAnswers = {};
+  const container = document.getElementById('qolQuestions');
+  container.innerHTML = '';
+  QOL_QUESTIONS.forEach((q, idx) => {
+    const div = document.createElement('div');
+    div.className = 'qol-question';
+    div.innerHTML = `
+      <div class="q-domain">${idx + 1}/${QOL_QUESTIONS.length} • ${q.domain}</div>
+      <div class="q-text">${q.text}</div>
+      <div class="scale" id="scale-${q.key}">
+        ${q.labels.map((l, i) => `
+          <div class="scale-btn" onclick="selectScale('${q.key}', ${i+1}, this)">
+            <div style="font-size:18px">${i+1}</div>
+            <div style="font-size:11px; margin-top:2px">${l}</div>
+          </div>`).join('')}
+      </div>`;
+    container.appendChild(div);
+  });
+  document.getElementById('qolModal').classList.add('visible');
+}
+
+function selectScale(key, value, btn) {
+  qolAnswers[key] = value;
+  const scale = document.getElementById(`scale-${key}`);
+  [...scale.children].forEach((el, i) => {
+    el.classList.toggle('selected', i === value - 1);
+  });
+}
+
+function closeQol() {
+  document.getElementById('qolModal').classList.remove('visible');
+}
+
+async function submitQol() {
+  if (Object.keys(qolAnswers).length < QOL_QUESTIONS.length) {
+    toast('กรุณาตอบให้ครบทุกข้อ');
+    return;
+  }
+  const r = await fetch(`${API}/api/qol/assess`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ user_id: currentUserId, ...qolAnswers }),
+  });
+  const data = await r.json();
+  closeQol();
+  toast(data.message);
+  await loadQoL();
+  await getRecommendations();
+}
+
+// Init
+loadUsers();
+</script>
+</body>
+</html>

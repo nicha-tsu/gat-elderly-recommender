@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: gat-elderly-recommender
+    runtime: python
+    buildCommand: "pip install --no-cache-dir -r requirements-prod.txt"
+    startCommand: "uvicorn api.server:app --host 0.0.0.0 --port $PORT"
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: TORCH_HOME
+        value: /tmp/torch_cache
