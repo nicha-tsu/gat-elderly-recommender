@@ -8,5 +8,3 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
-      - key: TORCH_HOME
-        value: /tmp/torch_cache

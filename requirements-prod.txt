@@ -1,14 +1,14 @@
-# Production requirements — slimmed down for Render free tier (512MB RAM)
-# ใช้ pre-computed embeddings (ไม่ต้องลง sentence-transformers)
+# Production requirements — ใช้ pre-computed embeddings (ไม่มี sentence-transformers)
+# Flexible versions ให้รองรับหลาย Python version
 
 --extra-index-url https://download.pytorch.org/whl/cpu
 
-torch==2.3.0+cpu
-torch-geometric==2.5.0
-numpy==1.26.4
-pandas==2.2.0
-scipy==1.12.0
-fastapi==0.110.0
-uvicorn[standard]==0.27.0
-pydantic==2.6.0
-matplotlib==3.8.0
+torch>=2.3,<2.12
+torch-geometric>=2.4
+numpy>=1.24,<2.0
+pandas>=2.0
+scipy>=1.10
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.0
+matplotlib>=3.7
